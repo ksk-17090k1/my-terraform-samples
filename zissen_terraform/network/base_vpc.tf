@@ -84,3 +84,13 @@ resource "aws_route" "private" {
   nat_gateway_id         = aws_nat_gateway.example.id
   destination_cidr_block = "0.0.0.0/0"
 }
+
+# -- security group ---
+# モジュールをつかう
+module "example_sg" {
+  source      = "./security_group"
+  name        = "module-sg"
+  vpc_id      = aws_vpc.example.id
+  port        = 80
+  cidr_blocks = ["0.0.0.0/0"]
+}
