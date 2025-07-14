@@ -24,11 +24,12 @@ resource "aws_elasticache_replication_group" "example" {
   # node数 (プライマリ+レプリカの合計数)
   num_cache_clusters = 3
   node_type          = "cache.m3.medium"
-  # スナップショット取得タイミング
+  # スナップショット取得タイミング(1hが一般的)
   snapshot_window = "09:10-10:10"
-  # スナップショットの保持期間
+  # スナップショットの保持日数
   snapshot_retention_limit = 7
-  # メンテナンスを入れてよいタイミング
+  # メンテナンスを入れてよいタイミング(1hが一般的)
+  # メンテの種類はAWSが自動実行するものと、実装者の設定変更によるものがある。
   maintenance_window = "mon:10:40-mon:11:40"
   # 自動フェイルオーバーを有効にする(ただし、複数AZで構成する必要がある)
   automatic_failover_enabled = true
