@@ -1,3 +1,5 @@
+
+
 # terraformのバージョン, providerを指定
 terraform {
   required_version = "1.12.2"
@@ -11,6 +13,16 @@ terraform {
       version = "~> 3.1"
     }
   }
+
+  # stateの保存先を設定
+  backend "s3" {
+    bucket = "tfstate-pragmatic-terraform"
+    # TODO: このkeyの命名規則どうしてんだろ
+    key    = "example/terraform.tfstate"
+    region = "ap-northeast-1"
+  }
+
+
 }
 
 # AWS プロバイダーの設定
@@ -18,14 +30,50 @@ provider "aws" {
   region = "ap-northeast-1"
 }
 
-resource "null_resource" "example" {
+# ====== 超基本 ======
 
-  # terraform destroyで削除されないようにする保険
-  # このリソース定義全体を削除してapplyすると削除できてしまうので注意！！
-  lifecycle {
-    prevent_destroy = true
+# --- variable ---
+# NOTE: TF_VAR_example_instance_type という環境変数を作るとterraformが勝手に上書きする
+# コマンドライン引数的に上書きもできる
+
+# var.example_instance_type でアクセスできる
+variable "example_instance_type" {
+  default = "t3.micro"
+}
+
+# --- local variable ---
+# local.example_instance_type でアクセスできる
+locals {
+  example_instance_type = "t3.micro"
+}
+
+# --- data source ---
+# data.aws_ami.recent_amazon_linux.image_id でアクセスできる
+data "aws_ami" "recent_amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+  filter {
+    name   = "state"
+    values = ["available"]
   }
 }
+
+# --- Moduleの使用 ---
+module "describe_regions_for_ec2" {
+  source     = "./iam_role"
+  name       = "describe-regions-for-ec2"
+  identifier = "ec2.amazonaws.com"
+  policy     = data.aws_iam_policy_document.ec2_describe_regions.json
+}
+
+
+
+
 
 # --- 三項演算子 ---
 variable "env" {}
@@ -44,38 +92,83 @@ resource "aws_vpc" "example" {
   cidr_block = "10.0.${count.index}.0/24"
 }
 
-# --- 良く使われるData Resource ---
+# --- Lifecycle ---
+
+resource "null_resource" "example" {
+
+  # terraform destroyで削除されないようにする保険
+  # このリソース定義全体を削除してapplyすると削除できてしまうので注意！！
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+
+# --- 良く使われるData Source ---
+
+# IAMポリシーを取得
+# NOTE: aws_iam_policy_documentのdata sourceだけ他のdata sourceと挙動が異なる。
+# 外部からリソースを取得するのではなく、完全にただのJSONを生成するだけの役割を持つ。
+data "aws_iam_policy_document" "ec2_describe_regions" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ec2:DescribeRegions"
+    ]
+    resources = ["*"]
+  }
+}
 
 # AWSのアカウントID
+# data.aws_caller_identity.current.account_id でアクセスできる
 data "aws_caller_identity" "current" {}
 
-output "account_id" {
-  value = data.aws_caller_identity.current.account_id
-}
 
 # 現在のAWSリージョン
+# data.aws_region.current.name でアクセスできる
 data "aws_region" "current" {}
 
-output "region_name" {
-  value = data.aws_region.current.name
-}
 
 # AZをリストで取得
+# data.aws_availability_zones.available.names でアクセスできる
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
-output "availability_zones" {
-  value = data.aws_availability_zones.available.names
-}
-
 # サービスアカウント
 # たとえばALBのサービスアカウントを取得する
+# data.aws_elb_service_account.current.id でアクセスできる
 data "aws_elb_service_account" "current" {}
 
-output "alb_service_account_id" {
-  value = data.aws_elb_service_account.current.id
+
+# SSMパラメータストア
+# たとえば以下であれば aws_ssm_parameter.subnet_id.value でアクセスできる
+data "aws_ssm_parameter" "subnet_id" {
+  name = "/staging/public/subnet/id"
 }
+
+# tagで検索
+data "aws_subnet" "public_staging" {
+  tags = {
+    Environment   = "Staging"
+    Accessibility = "Public"
+  }
+}
+
+# filterで絞り込む
+data "aws_subnet" "public_staging" {
+  filter {
+    name = "vpc-id"
+    # こんな感じで絞り込みに他のdata sourceを使える
+    values = [data.aws_vpc.staging.id]
+  }
+
+  filter {
+    name   = "cidr-block"
+    values = ["192.168.0.0/24"]
+  }
+}
+
 
 
 # --- random provider ---
@@ -88,21 +181,14 @@ resource "random_string" "password" {
 }
 
 
-# IAM Role Moduleの使用
-module "describe_regions_for_ec2" {
-  source     = "./iam_role"
-  name       = "describe-regions-for-ec2"
-  identifier = "ec2.amazonaws.com"
-  policy     = data.aws_iam_policy_document.ec2_describe_regions.json
+# ====== 組み込み関数 ======
+
+# yaml
+resource "aws_ecs_task_definition" "example" {
+  family = "example"
+  memory = "512"
+  # yamlをjsonに変換してcontainer_definitionsに渡す
+  container_definitions = jsonencode(yamldecode(file("./cd.yaml")))
 }
 
-data "aws_iam_policy_document" "ec2_describe_regions" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "ec2:DescribeRegions"
-    ]
-    resources = ["*"]
-  }
-}
 
