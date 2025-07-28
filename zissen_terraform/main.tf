@@ -21,13 +21,21 @@ terraform {
     key    = "example/terraform.tfstate"
     region = "ap-northeast-1"
   }
-
-
 }
 
 # AWS プロバイダーの設定
 provider "aws" {
   region = "ap-northeast-1"
+
+  # default tagsは設定しといた方がいい
+  default_tags {
+    tags = {
+      Environment  = "stg"
+      Project      = "my-project"
+      ManagedBy    = "terraform"
+      Organization = "your-org"
+    }
+  }
 }
 
 # ====== 超基本 ======
@@ -120,8 +128,8 @@ data "aws_iam_policy_document" "ec2_describe_regions" {
 }
 
 # AWSのアカウントID
-# data.aws_caller_identity.current.account_id でアクセスできる
-data "aws_caller_identity" "current" {}
+# data.aws_caller_identity.self.account_id でアクセスできる
+data "aws_caller_identity" "self" {}
 
 
 # 現在のAWSリージョン
@@ -137,8 +145,8 @@ data "aws_availability_zones" "available" {
 
 # サービスアカウント
 # たとえばALBのサービスアカウントを取得する
-# data.aws_elb_service_account.current.id でアクセスできる
-data "aws_elb_service_account" "current" {}
+# data.aws_elb_service_account.main.id でアクセスできる
+data "aws_elb_service_account" "main" {}
 
 
 # SSMパラメータストア
@@ -169,6 +177,12 @@ data "aws_subnet" "public_staging" {
   }
 }
 
+# --- route53 ---
+data "aws_route53_zone" "inside" {
+  zone_id = "Z064454120TUJ17G7VNI"
+}
+
+
 
 
 # --- random provider ---
@@ -191,4 +205,29 @@ resource "aws_ecs_task_definition" "example" {
   container_definitions = jsonencode(yamldecode(file("./cd.yaml")))
 }
 
+# compact, concat, try
 
+# compact: リストからnullや空文字を除外する
+# concat: リストを結合する
+# try: エラーが出たら空文字を返す
+resource "aws_lb" "this" {
+
+  security_groups = compact(
+    concat(
+      var.custom_security_group_ids,
+      [
+        try(aws_security_group.this[0].id, "")
+      ]
+    )
+  )
+
+  # merge: マップを結合する
+  # coalesce: 最初にnullでない値を返す
+  tags = merge(
+    var.load_balancer_custom_tags,
+    {
+      Name = coalesce(var.load_balancer_custom_tag_name, local.elb_tag_name)
+    }
+  )
+
+}

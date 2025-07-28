@@ -22,7 +22,8 @@ resource "aws_route53_record" "example" {
   alias {
     name = aws_lb.example.dns_name
     # ここにはLBやCloudFrontを指定できる
-    zone_id                = aws_lb.example.zone_id
+    zone_id = aws_lb.example.zone_id
+    # これは基本trueでよい
     evaluate_target_health = true
   }
 }

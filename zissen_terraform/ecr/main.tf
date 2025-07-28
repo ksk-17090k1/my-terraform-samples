@@ -1,5 +1,8 @@
 resource "aws_ecr_repository" "example" {
-  name = "example"
+  name                 = "example"
+  image_tag_mutability = "MUTABLE"
+
+  force_delete = true
 }
 
 resource "aws_ecr_lifecycle_policy" "example" {
