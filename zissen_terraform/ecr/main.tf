@@ -8,6 +8,7 @@ resource "aws_ecr_repository" "example" {
 resource "aws_ecr_lifecycle_policy" "example" {
   repository = aws_ecr_repository.example.name
 
+  // ここのjsonはマネコンでポチポチして生成するのがいいかも
   policy = <<EOF
   {
     "rules": [
@@ -28,3 +29,4 @@ resource "aws_ecr_lifecycle_policy" "example" {
   }
 EOF
 }
+

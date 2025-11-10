@@ -127,14 +127,22 @@ data "aws_iam_policy_document" "ec2_describe_regions" {
   }
 }
 
+# 既存のIAMマネージドポリシーを取得
+data "aws_iam_policy" "jobmiru_v2_vpc_access_lambda" {
+  arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  # 以下でも書ける
+  # name        = "AWSLambdaBasicExecutionRole"
+  # path_prefix = "/service-role/"
+}
+
 # AWSのアカウントID
 # data.aws_caller_identity.self.account_id でアクセスできる
 data "aws_caller_identity" "self" {}
 
 
 # 現在のAWSリージョン
-# data.aws_region.current.name でアクセスできる
-data "aws_region" "current" {}
+# data.aws_region.main.region でアクセスできる
+data "aws_region" "main" {}
 
 
 # AZをリストで取得

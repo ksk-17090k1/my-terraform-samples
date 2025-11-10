@@ -1,5 +1,30 @@
 resource "aws_ecs_cluster" "example" {
   name = "example"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
+
+# ECS Cluster Capacity Providers
+resource "aws_ecs_cluster_capacity_providers" "this" {
+  count              = 1
+  cluster_name       = aws_ecs_cluster.this[0].name
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+
+  # FARGATEメイン、FARGATE_SPOTをサブとして使用
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    base              = 1
+    weight            = 4
+  }
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    base              = 0
+    weight            = 1
+  }
 }
 
 resource "aws_ecs_task_definition" "example" {
@@ -24,9 +49,35 @@ resource "aws_ecs_service" "example" {
   desired_count    = 2
   launch_type      = "FARGATE"
   platform_version = "1.4.0"
+
+  # --- デプロイメント設定 ---
+  # １つめ：デプロイメント中に実行できるタスクの最大パーセンテージ(デフォルトは200%)
+  # ２つめ：デプロイメント中に維持すべき健全なタスクの最小パーセンテージ(デフォルトは100%)
+  # 普通のローリングアップデート: 200, 50の組み合わせ(バランスがとれている)
+  # ブルーグリーンぽいアップデート: 200, 100の組み合わせ(新しいのを起動しきってから古いのを落とす)
+  # 高速デプロイ: 200, 0の組み合わせ(既存を落としつつ新しいのを起動するので早いが、ダウンタイムあり)  
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
+
   # タスク起動時のヘルスチェック猶予時間。デフォルトは0秒。
   health_check_grace_period_seconds = 60
 
+  # タスク定義やサービス設定に変更がない場合でもデプロイを行う
+  # デフォルトはfalse, 必要なときにtrueにして、不要になったらfalseに戻す運用がよいらしい
+  force_new_deployment = false
+
+  # サービスのデプロイが完了するまでterraformが待機するか
+  # 開発環境であればデプロイ時間短縮のためfalseでもよいらしい
+  wait_for_steady_state = true
+
+  # タスクにExecできるようにする。本番環境ではfalseにして必要なときだけtrueにする
+  enable_execute_command = true
+
+  # --- タグまわり ---
+  # サービス名、クラスター名などのAWS管理タグを自動的に付与
+  enable_ecs_managed_tags = true
+  # サービスに付いているタグをタスクにも伝搬
+  propagate_tags          = "SERVICE"
   network_configuration {
     assign_public_ip = false
     security_groups  = [module.nginx_sg.security_group_id]

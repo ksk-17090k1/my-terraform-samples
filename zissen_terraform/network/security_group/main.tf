@@ -19,6 +19,7 @@ resource "aws_security_group_rule" "ingress" {
   security_group_id = aws_security_group.default.id
 }
 
+# outboundを全て開放するルール
 resource "aws_security_group_rule" "egress" {
   type              = "egress"
   from_port         = 0
