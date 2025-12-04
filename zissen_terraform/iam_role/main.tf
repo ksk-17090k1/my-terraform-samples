@@ -28,6 +28,8 @@ resource "aws_iam_policy" "default" {
   policy = var.policy
 }
 
+
+# NOTE: aws_iam_policy_attachmentは使ってはいけない！！！！
 resource "aws_iam_role_policy_attachment" "default" {
   role = aws_iam_role.default.name
   # NOTE: ここに直接managed policyのarnを書くこともできる。

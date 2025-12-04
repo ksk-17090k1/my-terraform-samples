@@ -12,7 +12,7 @@ resource "aws_ecs_task_definition" "example_batch" {
   memory                   = "512"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  container_definitions    = file("./batch_container_definitions.json")
+  container_definitions    = jsonencode(yamldecode(file("./batch_container_definitions.yaml")))
   execution_role_arn       = module.ecs_task_execution_role.iam_role_arn
 }
 

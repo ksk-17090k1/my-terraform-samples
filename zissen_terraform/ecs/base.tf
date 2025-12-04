@@ -34,8 +34,7 @@ resource "aws_ecs_task_definition" "example" {
   # fargateの場合はawsvpcを指定する
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  # TODO: Yaml化する
-  container_definitions = file("./container_definitions.json")
+  container_definitions    = jsonencode(yamldecode(file("./container_definitions.yaml")))
   # タスク実行ロール
   execution_role_arn = module.ecs_task_execution_role.iam_role_arn
   # TODO: ここにタスクロールの設定できるらしい
@@ -77,7 +76,7 @@ resource "aws_ecs_service" "example" {
   # サービス名、クラスター名などのAWS管理タグを自動的に付与
   enable_ecs_managed_tags = true
   # サービスに付いているタグをタスクにも伝搬
-  propagate_tags          = "SERVICE"
+  propagate_tags = "SERVICE"
   network_configuration {
     assign_public_ip = false
     security_groups  = [module.nginx_sg.security_group_id]
