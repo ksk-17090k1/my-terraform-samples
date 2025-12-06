@@ -10,6 +10,9 @@ resource "aws_iam_role" "default" {
 }
 
 # assume role policyの定義
+
+# NOTE: aws_iam_policy_documentのdata sourceだけ他のdata sourceと挙動が異なる。
+# 外部からリソースを取得するのではなく、完全にただのJSONを生成するだけの役割を持つ。
 data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
