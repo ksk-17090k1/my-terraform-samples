@@ -44,12 +44,14 @@ resource "aws_cloudwatch_event_target" "example_batch" {
   target_id = "example-batch"
   rule      = aws_cloudwatch_event_rule.example_batch.name
   role_arn  = module.ecs_events_role.iam_role_arn
-  arn       = aws_ecs_cluster.example.arn
+  # クラスターを指定
+  arn = aws_ecs_cluster.example.arn
 
   ecs_target {
-    launch_type         = "FARGATE"
-    task_count          = 1
-    platform_version    = "1.4.0"
+    launch_type      = "FARGATE"
+    task_count       = 1
+    platform_version = "1.4.0"
+    # バッチはサービス不要なのでタスク定義だけで良い。
     task_definition_arn = aws_ecs_task_definition.example_batch.arn
 
     network_configuration {

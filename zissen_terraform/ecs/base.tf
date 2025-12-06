@@ -72,6 +72,44 @@ resource "aws_ecs_service" "example" {
   # タスクにExecできるようにする。本番環境ではfalseにして必要なときだけtrueにする
   enable_execute_command = true
 
+  # --- service connect ---
+  # client側 (gatewayなど)
+  # service_connect_configuration {
+  #   enabled   = true
+  #   namespace = aws_service_discovery_http_namespace.namespace.name
+  #   log_configuration {
+  #     log_driver = "awslogs"
+  #     options = {
+  #       awslogs-group         = aws_cloudwatch_log_group.ecs.name
+  #       awslogs-region        = var.aws_region
+  #       awslogs-stream-prefix = "app-name"
+  #     }
+  #   }
+  # }
+
+  # server側 (apiなど)
+  service_connect_configuration {
+    enabled   = true
+    namespace = aws_service_discovery_http_namespace.namespace.name
+    log_configuration {
+      log_driver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.ecs.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "app-name"
+      }
+    }
+
+    # This setting needs to be configured based on the portMappings setting in the task definition.
+    service {
+      port_name = "http"
+      client_alias {
+        port     = 8080
+        dns_name = "api-service-alias"
+      }
+    }
+  }
+
   # --- タグまわり ---
   # サービス名、クラスター名などのAWS管理タグを自動的に付与
   enable_ecs_managed_tags = true
@@ -112,6 +150,11 @@ resource "aws_cloudwatch_log_group" "for_ecs" {
   name = "/ecs/example"
   # ログの保存期間
   retention_in_days = 180
+}
+
+# service connect用のnamespace
+resource "aws_service_discovery_http_namespace" "namespace" {
+  name = "service-name-prd-namespace"
 }
 
 # --- タスク実行ロール ---

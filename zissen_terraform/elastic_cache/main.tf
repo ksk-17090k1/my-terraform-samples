@@ -31,14 +31,36 @@ resource "aws_elasticache_replication_group" "example" {
   # メンテナンスを入れてよいタイミング(1hが一般的)
   # メンテの種類はAWSが自動実行するものと、実装者の設定変更によるものがある。
   maintenance_window = "mon:10:40-mon:11:40"
-  # 自動フェイルオーバーを有効にする(ただし、複数AZで構成する必要がある)
-  automatic_failover_enabled = true
-  port                       = 6379
+  port               = 6379
   # 設定変更を即時かメンテナンスウィンドウで行うか
   apply_immediately    = false
   security_group_ids   = [module.redis_sg.security_group_id]
   parameter_group_name = aws_elasticache_parameter_group.example.name
   subnet_group_name    = aws_elasticache_subnet_group.example.name
+
+  # マルチAZにするか (num_cache_clustersが2以上のときのみ有効)
+  multi_az_enabled = true
+  # 自動フェイルオーバーを有効にする (multi_az_enabledがtrueのときは強制的にtrue)
+  automatic_failover_enabled  = true
+  preferred_cache_cluster_azs = ["ap-northeast-1a", "ap-northeast-1c", "ap-northeast-1d"]
+
+  log_delivery_configuration {
+    destination      = aws_cloudwatch_log_group.cloudwatch_log_group.name
+    destination_type = "cloudwatch-logs"
+    log_format       = "json"
+    log_type         = "slow-log"
+  }
+  log_delivery_configuration {
+    destination      = aws_cloudwatch_log_group.log_group.name
+    destination_type = "cloudwatch-logs"
+    log_format       = "json"
+    log_type         = "engine-log"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "log_group" {
+  name              = "/elasticache/ltd-tob-recommend-logs"
+  retention_in_days = 14
 }
 
 module "redis_sg" {

@@ -4,8 +4,8 @@
   logConfiguration:
     logDriver: awslogs
     options:
-      awslogs-region: ap-northeast-1
-      awslogs-stream-prefix: batch
       awslogs-group: /ecs-scheduled-tasks/example
+      awslogs-stream-prefix: batch
+      awslogs-region: ap-northeast-1
   command:
     - /bin/date

@@ -4,9 +4,10 @@
   logConfiguration:
     logDriver: awslogs
     options:
-      awslogs-region: ap-northeast-1
-      awslogs-stream-prefix: nginx
       awslogs-group: /ecs/example
+      # prefixは同じlog group内で複数アプリのログを出すとかに便利。
+      awslogs-stream-prefix: nginx
+      awslogs-region: ap-northeast-1
   portMappings:
     - protocol: tcp
       containerPort: 80
