@@ -58,7 +58,7 @@ resource "aws_ecs_service" "example" {
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 100
 
-  # タスク起動時のヘルスチェック猶予時間。デフォルトは0秒。
+  # タスク起動時のALBからのヘルスチェック猶予時間。デフォルトは0秒。
   health_check_grace_period_seconds = 60
 
   # タスク定義やサービス設定に変更がない場合でもデプロイを行う

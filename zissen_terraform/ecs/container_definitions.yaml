@@ -1,3 +1,4 @@
+# container defの中にもヘルスチェック書ける。基本書いたほうが良さそう。
 - name: example
   image: nginx:latest
   essential: true

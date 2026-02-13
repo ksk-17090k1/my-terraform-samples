@@ -1,9 +1,3 @@
-
-# 既にあるホストゾーンを取得
-# data "aws_route53_zone" "example" {
-#   name = "example.com"
-# }
-
 # 新しいホストゾーンを作成
 resource "aws_route53_zone" "example" {
   name = "test.example.com"
@@ -44,8 +38,9 @@ resource "aws_acm_certificate" "example" {
   }
 }
 
-# 検証用DNSレコード
-# NOTE: subject_alternative_namesに何か指定した場合はその分のDNSレコードも必要
+# ACM証明書のDNS検証用レコードの作成
+# NOTE: subject_alternative_names に何か指定した場合は、それらの分も自動で作成される
+# あんまりよく理解してないので、これはおまじない的に思っている。
 resource "aws_route53_record" "example_certificate" {
   for_each = {
     for dvo in aws_acm_certificate.example.domain_validation_options : dvo.domain_name => {

@@ -39,6 +39,8 @@ resource "aws_lb" "example" {
     aws_subnet.public_1.id,
   ]
 
+  // LBはlogにcloud watch logsは対応していない！
+  // S3かKinesis Firehoseのみが対応している。
   access_logs {
     bucket  = aws_s3_bucket.alb_log.id
     enabled = true
@@ -188,7 +190,10 @@ resource "aws_lb_listener" "redirect_http_to_https" {
 # Target Group
 resource "aws_lb_target_group" "example" {
   name = "example"
-  # EC2, IP, Lambdaなどが指定できる
+  # instance: EC2インスタンス
+  # ip: VPC内のIPアドレス(VPC外のpublic IPは不可), ECSの場合はこれ。
+  # lambda: Lambda関数. 選べるがこれやるならAPI Gatewayで良い
+  # alb: 別のALBに繋げられる
   target_type = "ip"
   # target_type="ip"とした場合はvpc_id, port, protocolが必要
   vpc_id = aws_vpc.example.id
@@ -225,6 +230,15 @@ resource "aws_lb_target_group" "example" {
     # "traffic-port"とすると上記のターゲットグループのポートを使う
     port     = "traffic-port"
     protocol = "HTTP"
+  }
+
+  # sticky session
+  # WebSocket使う場合は設定不要。
+  # refs: https://docs.aws.amazon.com/prescriptive-guidance/latest/load-balancer-stickiness/options.html?utm_source=chatgpt.com
+  stickiness {
+    enabled         = true
+    type            = "lb_cookie"
+    cookie_duration = 86400
   }
 
   depends_on = [aws_lb.example]
