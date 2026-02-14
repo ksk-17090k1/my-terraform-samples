@@ -27,6 +27,8 @@ resource "google_service_account" "jobmiru_processor_wif_sa" {
 }
 
 # IAM Service Account の権限借用の許可 (workloadIdentityUser)
+# iam memberはそのサービスアカウントにアクセスできるユーザー(稲垣さんとか)で、
+# ここにAWSのIAM Roleを人みたいに設定する。
 resource "google_service_account_iam_member" "jobmiru_processor_allow_impersonation" {
   service_account_id = google_service_account.jobmiru_processor_wif_sa.name
   role               = "roles/iam.workloadIdentityUser"
