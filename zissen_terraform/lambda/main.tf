@@ -15,23 +15,21 @@ resource "aws_lambda_function" "jobmiru_v2_validate_jobs_csv" {
   timeout       = 900
   memory_size   = 1024
 
-#   vpc_config {
-#     subnet_ids         = var.subnet_ids
-#     security_group_ids = [module.jobmiru_v2_security_group_lambda.id]
-#   }
+  #   vpc_config {
+  #     subnet_ids         = var.subnet_ids
+  #     security_group_ids = [module.jobmiru_v2_security_group_lambda.id]
+  #   }
 
   environment {
     variables = {
-      LOG_LEVEL           = "INFO"
-      STAGE               = "dummy"
+      LOG_LEVEL = "INFO"
+      STAGE     = "dummy"
     }
   }
 
   lifecycle {
     ignore_changes = [image_uri]
   }
-  # TODO: x-rayの有効化
-
   # Ensure log group exists before function
   depends_on = [aws_cloudwatch_log_group.log_group]
 

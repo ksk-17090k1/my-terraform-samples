@@ -34,33 +34,3 @@ resource "aws_dynamodb_table" "jobmiru_v2_job_items" {
 }
 
 
-
-
-# DynamoDB StreamとLambdaのEvent Source Mapping
-resource "aws_lambda_event_source_mapping" "dynamodb_stream" {
-  event_source_arn  = aws_dynamodb_table.app_db.stream_arn
-  function_name     = aws_lambda_function.stream_lambda.arn
-  starting_position = "LATEST"
-
-  batch_size                         = 100
-  maximum_batching_window_in_seconds = 10
-
-  maximum_retry_attempts = 3
-
-  parallelization_factor = 1
-
-  destination_config {
-    on_failure {
-      destination_arn = aws_sqs_queue.dlq.arn
-    }
-  }
-
-  # Insertイベントのみ処理する
-  filter_criteria {
-    filter {
-      pattern = jsonencode({
-        eventName = ["INSERT"]
-      })
-    }
-  }
-}

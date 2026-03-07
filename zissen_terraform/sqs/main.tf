@@ -1,12 +1,13 @@
 # NOTE: dlqという名前がついているが、SQS目線では通常のキュー
 resource "aws_sqs_queue" "sample_queue" {
-  name = "${local.project_prefix_kebab}-sample-queue"
+  name = "sample-queue"
   # キューに入ってから処理実行されるまでの時間。デフォルトは0秒
   delay_seconds = 15
   # 1024 ~ 262144 bytesを指定する。
   # デフォルトは262144 bytes (256 KiB)
   # NOTE: ただし、AWS側では2025/08に1MiBに拡張されているぽい。
   max_message_size = 256 * 1024
+  # メッセージがキューに保存される最大期間。
   # 60 ~ 1209600 秒を指定する。つまり1分から14日間。
   # デフォルトは345600秒 (4日間)
   message_retention_seconds = 60 * 60 * 24 * 3
@@ -15,6 +16,8 @@ resource "aws_sqs_queue" "sample_queue" {
   # 0以上、20以下の値を設定できる。
   # 0に設定すると、キューが空でも即座にレスポンスを返します。この挙動をショートポーリングと呼びます。
   # 1以上に設定すると、キューが空のときは設定した秒数だけ待ってからレスポンスを返します。この挙動をロングポーリングと呼びます。
+  # ただし、これはアプリが直接SQSにアクセスする場合で、
+  # SQS+lambdaの構成ではlambda側で勝手にロングポーリングするのでこの設定は無視される
   receive_wait_time_seconds = 10
 
   # 可視性タイムアウト: lambda_timeout + batch_window + 30s とすると良いらしい
