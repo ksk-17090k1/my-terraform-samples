@@ -1,6 +1,7 @@
 # NOTE: HTTP APIの場合はaws_apigatewayv2_apiを使う
+
 resource "aws_api_gateway_rest_api" "api" {
-  name = "${local.project_prefix_kebab}-rest-api-gateway"
+  name = "sample-pj-rest-api-gateway"
 }
 
 # Proxy resource (for /{proxy+})

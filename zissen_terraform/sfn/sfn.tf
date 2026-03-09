@@ -61,6 +61,44 @@ resource "aws_sfn_state_machine" "jobmiru_v2_update_bq_and_sheet" {
       }
     }
   })
+
+  # ERRORレベルのみ記録
+  logging_configuration {
+    log_destination        = "${aws_cloudwatch_log_group.my_pj_sfn_gcs_sensor.arn}:*"
+    include_execution_data = false
+    level                  = "ERROR"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "my_pj_sfn_gcs_sensor" {
+  name              = "/aws/states/my-pj-sfn-gcs-sensor"
+  retention_in_days = 60
+}
+
+
+# SfnからCloudWatch Logsにログを出すには、CloudWatch Logsのリソースポリシーで明示的に許可する必要あり。
+resource "aws_cloudwatch_log_resource_policy" "my_pj_sfn_log_publishing" {
+  policy_name = "my-pj-sfn-log-publishing"
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "states.amazonaws.com" }
+        Action = [
+          "logs:CreateLogDelivery",
+          "logs:GetLogDelivery",
+          "logs:UpdateLogDelivery",
+          "logs:DeleteLogDelivery",
+          "logs:ListLogDeliveries",
+          "logs:PutResourcePolicy",
+          "logs:DescribeResourcePolicies",
+          "logs:DescribeLogGroups",
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 
