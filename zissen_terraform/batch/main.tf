@@ -3,7 +3,7 @@ resource "aws_batch_compute_environment" "evaluation_batch" {
 
   # compute environmentは更新はできず削除->作成の流れになる。
   # その際にterraformで更新しようとすると既存リソースと競合してエラーになるらしく、
-  # name_prefixをnameの代わりに使う方がいい、という記述もある。
+  # name_prefixをnameの代わりに使う方がいい、という記述もある。実際やったが正しそう。
   # refs: https://github.com/lvgs-aiml-engineering/aiml-terraform-aws-metaflow/blob/downstream/main/modules/computation/batch.tf
   # 一応更新は update_policy を指定すると対応できるぽいが、applyが複数回必要になるので確かにprefixの方が良さそう。
   name_prefix = "my-project-evaluation-batch-compute-env-"
