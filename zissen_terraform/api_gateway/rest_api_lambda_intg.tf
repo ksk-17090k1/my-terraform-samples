@@ -34,7 +34,7 @@ resource "aws_api_gateway_integration" "integration" {
   connection_type = "INTERNET"
   # Lambda function can only be invoked via POST
   # refs: https://github.com/amazon-archives/aws-apigateway-importer/issues/9#issuecomment-129651005
-  # TODO: Lambda統合以外の場合はまた調べないといけない
+  # Lambda関数は実はPOST以外受け付けないのでPOST
   integration_http_method = "POST"
 }
 
@@ -135,6 +135,7 @@ EOF
 
 # --- リソースの設定おわり ---
 
+# lambdaのリソースポリシーの設定
 resource "aws_lambda_permission" "apigw_lambda" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
@@ -176,9 +177,6 @@ resource "aws_api_gateway_stage" "stage" {
   deployment_id = aws_api_gateway_deployment.deployment.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "main"
-
-  # x-ray有効化
-  xray_tracing_enabled = true
 
   depends_on = [aws_cloudwatch_log_group.api_gateway_log_group]
 }
