@@ -76,6 +76,8 @@ resource "aws_batch_job_queue" "evaluation_batch" {
   # 複数のキューが同一のEnvを指定している場合に活きる設定値
   # リアルタイム処理用のキューと、バッチ処理用のキューを用意し同一のEnvを指定し、
   # リアルタイム用のキューの優先度を上げる、などの使い方ができる。
+  # あとはFARGATEとFARGATE_SPOTでEnvを分けて、SPOTが使えなかったらFARGATEを使う、などの使い方もできる。
+  # (FARGATE_SPOT の中断（Spot interruption）は Batch レベルの失敗扱いになる)
   priority = 1
 
   # どのEnvを優先して使うかを決める値
