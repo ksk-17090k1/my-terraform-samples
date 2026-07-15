@@ -14,6 +14,12 @@ resource "aws_sagemaker_user_profile" "sagemaker_user_profile" {
   user_profile_name = "${local.name_prefix}-sagemaker-user-profile"
 }
 
+// バケットの細かい設定はここでは省略
+resource "aws_s3_bucket" "sagemaker_mlflow_artifacts" {
+  bucket = "${var.project_prefix}-sagemaker-mlflow-artifacts"
+}
+
+
 resource "aws_iam_role" "sagemaker_execution_role" {
   name = "${local.name_prefix}-sagemaker-execution-role"
 
@@ -45,7 +51,29 @@ resource "aws_iam_policy" "sagemaker_mlflow_permissions" {
         Effect   = "Allow",
         Action   = "sagemaker-mlflow:*",
         Resource = "*"
-      }
+      },
+      {
+        Sid    = "ListMlflowArtifactsBucket"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+        ]
+        Resource = aws_s3_bucket.sagemaker_mlflow_artifacts.arn
+      },
+      {
+        Sid    = "ReadWriteMlflowArtifacts"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+        ]
+        Resource = "${aws_s3_bucket.sagemaker_mlflow_artifacts.arn}/*"
+      },
     ]
   })
 }
@@ -54,7 +82,6 @@ resource "aws_iam_role_policy_attachment" "sagemaker_full_access" {
   role       = aws_iam_role.sagemaker_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
 }
-
 
 resource "aws_iam_role_policy_attachment" "sagemaker_processing_ecr" {
   role       = aws_iam_role.sagemaker_execution_role.name
@@ -71,5 +98,7 @@ resource "aws_iam_role_policy_attachment" "sagemaker_mlflow_permissions_attachme
 resource "aws_sagemaker_mlflow_app" "model_experiment" {
   name               = "model-experiment"
   role_arn           = "arn:aws:iam::${data.aws_caller_identity.self.account_id}:role/${local.project_prefix_kebab}-sagemaker-execution-role"
-  artifact_store_uri = "s3://${local.project_prefix_kebab}-sagemaker-bucket/mlflow"
+  artifact_store_uri = "s3://${aws_s3_bucket.sagemaker_mlflow_artifacts.bucket}/mlflow-artifacts"
 }
+
+
